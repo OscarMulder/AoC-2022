@@ -3,8 +3,8 @@ use anyhow::Result;
 
 const DAY: u32 = 1;
 
-fn solve(input: &Path, take: usize) -> Result<u32> {
-    let mut res: Vec<u32> = std::fs::read_to_string(input)?
+fn solve(input: &str, take: usize) -> Result<u32> {
+    let mut res: Vec<u32> = input
         .split("\n\n")
         .map(|s| s.lines().map(str::parse::<u32>).sum())
         .collect::<Result<Vec<u32>, std::num::ParseIntError>>()?;
@@ -12,17 +12,23 @@ fn solve(input: &Path, take: usize) -> Result<u32> {
     Ok(res.iter().take(take).sum::<u32>())
 }
 
-fn main() {
+fn input() -> String {
     let path = format!("./data/{}.input", DAY);
-    let input = Path::new(&path);
+    let input_path = Path::new(&path);
+    let input = std::fs::read_to_string(input_path).unwrap();
+    input
+}
 
-    let solve_first = solve(input, 1);
+fn main() {
+    let input = input();
+
+    let solve_first = solve(&input, 1);
     match solve_first {
         Ok(res) => println!("Day {}, first puzzle: {}", DAY, res),
         Err(e) => println!("{:?}", e),
     }
 
-    let solve_second = solve(input, 3);
+    let solve_second = solve(&input, 3);
     match solve_second {
         Ok(res) => println!("Day {}, second puzzle: {}", DAY, res),
         Err(e) => println!("{:?}", e),
@@ -33,13 +39,19 @@ fn main() {
 mod test {
     use super::*;
 
+    fn example_input() -> String {
+        let path = format!("./data/{}.example", DAY);
+        let input_path = Path::new(&path);
+        let input = std::fs::read_to_string(input_path).unwrap();
+        input
+    }
+
     #[test]
     fn example_first() {
-        let path = format!("./data/{}.example", DAY);
-        let input = Path::new(&path);
+        let input = example_input();
 
         let result = 24000;
-        let solve = solve(input, 1);
+        let solve = solve(&input, 1);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
@@ -47,12 +59,11 @@ mod test {
 
     #[test]
     fn example_second() {
-        let path = format!("./data/{}.example", DAY);
-        let input = Path::new(&path);
+        let input = example_input();
 
         let result = 45000;
-        let solve = solve(input, 3);
-        
+        let solve = solve(&input, 3);
+
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
     }
