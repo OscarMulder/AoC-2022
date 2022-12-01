@@ -1,4 +1,3 @@
-mod aoc;
 use std::path::Path;
 use anyhow::Result;
 
