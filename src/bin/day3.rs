@@ -3,26 +3,6 @@ use anyhow::Result;
 
 const DAY: u32 = 3;
 
-fn solve(input: &str) -> Result<String> {
-    let res: u32 = input.lines()
-        .collect::<Vec<&str>>()
-        .chunks(3)
-        .map(|group| {
-            let set: HashSet<char> = group[0].chars().filter(|c| group[1].chars().find(|ch| ch == c) != None).collect();
-            let duplicate = group[2].chars().find(|c| set.contains(c));
-            if let Some(dup) = duplicate {
-                if dup.is_ascii_lowercase() {
-                    return dup as u32 - 'a' as u32 + 1;
-                } else {
-                    return dup as u32 - 'A' as u32 + 27;
-                }
-            }
-            0
-        })
-        .sum();
-    Ok(res.to_string())
-}
-
 fn solve_1(input: &str) -> Result<String> {
     let res: u32 = input.lines()
         .map(|l| {
@@ -44,7 +24,23 @@ fn solve_1(input: &str) -> Result<String> {
 }
 
 fn solve_2(input: &str) -> Result<String> {
-    solve(input)
+    let res: u32 = input.lines()
+        .collect::<Vec<&str>>()
+        .chunks(3)
+        .map(|group| {
+            let set: HashSet<char> = group[0].chars().filter(|c| group[1].chars().find(|ch| ch == c) != None).collect();
+            let duplicate = group[2].chars().find(|c| set.contains(c));
+            if let Some(dup) = duplicate {
+                if dup.is_ascii_lowercase() {
+                    return dup as u32 - 'a' as u32 + 1;
+                } else {
+                    return dup as u32 - 'A' as u32 + 27;
+                }
+            }
+            0
+        })
+        .sum();
+    Ok(res.to_string())
 }
 
 fn input() -> String {
