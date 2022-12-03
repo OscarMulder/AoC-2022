@@ -1,51 +1,50 @@
-use std::path::Path;
+use std::{path::Path, collections::HashSet};
 use anyhow::Result;
 
-const DAY: u32 = 2;
+const DAY: u32 = 3;
 
-fn scores_1(round: &str) -> u32 {
-    match round {
-        "A X" => 4,
-        "A Y" => 8,
-        "A Z" => 3,
-        "B X" => 1,
-        "B Y" => 5,
-        "B Z" => 9,
-        "C X" => 7,
-        "C Y" => 2,
-        "C Z" => 6,
-        _ => 0
-    }
-}
-
-fn scores_2(round: &str) -> u32 {
-    match round {
-        "A X" => 3,
-        "A Y" => 4,
-        "A Z" => 8,
-        "B X" => 1,
-        "B Y" => 5,
-        "B Z" => 9,
-        "C X" => 2,
-        "C Y" => 6,
-        "C Z" => 7,
-        _ => 0
-    }
-}
-
-fn solve(input: &str, scores: fn(&str) -> u32) -> Result<String> {
+fn solve(input: &str) -> Result<String> {
     let res: u32 = input.lines()
-        .map(scores)
+        .collect::<Vec<&str>>()
+        .chunks(3)
+        .map(|group| {
+            let set: HashSet<char> = group[0].chars().filter(|c| group[1].chars().find(|ch| ch == c) != None).collect();
+            let duplicate = group[2].chars().find(|c| set.contains(c));
+            if let Some(dup) = duplicate {
+                if dup.is_ascii_lowercase() {
+                    return dup as u32 - 'a' as u32 + 1;
+                } else {
+                    return dup as u32 - 'A' as u32 + 27;
+                }
+            }
+            0
+        })
         .sum();
     Ok(res.to_string())
 }
 
 fn solve_1(input: &str) -> Result<String> {
-    solve(input, scores_1)
+    let res: u32 = input.lines()
+        .map(|l| {
+            let len = l.len();
+            let first = l[..(len / 2 + 1)].to_string();
+            let second = l[(len / 2)..].to_string();
+            let duplicate = first.chars().find(|c| second.chars().find(|ch| ch == c) != None);
+            if let Some(dup) = duplicate {
+                if dup.is_ascii_lowercase() {
+                    return dup as u32 - 'a' as u32 + 1;
+                } else {
+                    return dup as u32 - 'A' as u32 + 27;
+                }
+            }
+            0
+        })
+        .sum();
+    Ok(res.to_string())
 }
 
 fn solve_2(input: &str) -> Result<String> {
-    solve(input, scores_2)
+    solve(input)
 }
 
 fn input() -> String {
@@ -86,7 +85,7 @@ mod test {
     fn example_first() {
         let input = example_input();
 
-        let result = "15";
+        let result = "157";
         let solve = solve_1(&input);
 
         assert!(solve.is_ok());
@@ -97,7 +96,7 @@ mod test {
     fn example_second() {
         let input = example_input();
 
-        let result = "12";
+        let result = "70";
         let solve = solve_2(&input);
 
         assert!(solve.is_ok());
