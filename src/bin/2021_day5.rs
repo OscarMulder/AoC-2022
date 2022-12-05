@@ -53,18 +53,30 @@ fn get_complete_line(l: &Line) -> Vec<Point> {
         let res = (first..=last).map(|n| Point{ x: n, y: l.a.y}).collect::<Vec<Point>>();
         return res;
     }
-    if l.a.x >= l.b.x {
-        let len = l.a.x - l.b.x;
-        return (0..=len).map(|n| Point{ x: l.a.x - n, y: l.a.y + (len - n)}).collect::<Vec<Point>>();
+    let directions = (l.a.x >= l.b.x, l.a.y >= l.b.y);
+    match directions {
+        (true, true) => (0..=(l.a.x - l.b.x)).map(|n| Point{ x: l.a.x - n, y: l.a.y - n}).collect::<Vec<Point>>(),
+        (true, false) => (0..=(l.a.x - l.b.x)).map(|n| Point{ x: l.a.x - n, y: l.a.y + n}).collect::<Vec<Point>>(),
+        (false, true) => (0..=(l.b.x - l.a.x)).map(|n| Point{ x: l.a.x + n, y: l.a.y - n}).collect::<Vec<Point>>(),
+        (false, false) => (0..=(l.b.x - l.a.x)).map(|n| Point{ x: l.a.x + n, y: l.a.y + n}).collect::<Vec<Point>>(),
     }
-    let len = l.b.x - l.a.x;
-    let res = (0..=len).map(|n| Point{ x: l.b.x - n, y: l.b.y + (len - n)}).collect::<Vec<Point>>();
-    return res;
 }
 
 fn solve(input: &str) -> Result<String> {
     let lines: Vec<Line> = input.lines()
         .map(|l| l.parse::<Line>().unwrap())
+        .filter(|l| {
+            let directions = (l.a.x >= l.b.x, l.a.y >= l.b.y);
+            if l.a.x == l.b.x || l.a.y == l.b.y {
+                return true;
+            }
+            match directions {
+                (true, true) => l.a.x - l.b.x == l.a.y - l.b.y,
+                (true, false) => l.a.x - l.b.x == l.b.y - l.a.y,
+                (false, true) => l.b.x - l.a.x == l.a.y - l.b.y,
+                (false, false) => l.b.x - l.a.x == l.b.y - l.a.y,
+            }
+        })
         .collect();
     let points: Vec<Point> = lines.iter()
         .flat_map(get_complete_line)
