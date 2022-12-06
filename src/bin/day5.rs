@@ -1,4 +1,4 @@
-use std::{path::Path, str::{FromStr, from_utf8}, os::macos::raw::stat};
+use std::{path::Path, str::{FromStr, from_utf8}};
 use anyhow::Result;
 
 const DAY: u32 = 5;
@@ -25,7 +25,17 @@ impl FromStr for Move {
     }
 }
 
-fn solve(input: &str) -> Result<String> {
+fn get_items_part1(stack: &mut Vec<char>, len: usize) -> Vec<char> {
+    let items: Vec<char> = stack.drain(len..).rev().collect();
+    return items;
+}
+
+fn get_items_part2(stack: &mut Vec<char>, len: usize) -> Vec<char> {
+    let items: Vec<char> = stack.drain(len..).collect();
+    return items;
+}
+
+fn solve(input: &str, get_items: fn(stack: &mut Vec<char>, len: usize) -> Vec<char>) -> Result<String> {
     let splits: Vec<&str> = input.split("\n\n").collect();
     let pre_stacks = splits[0];
     let pre_moves = splits[1];
@@ -44,7 +54,7 @@ fn solve(input: &str) -> Result<String> {
     });
     moves.iter().for_each(|m| {
         let new_len = stacks[m.from - 1].len() - m.amount;
-        let mut items: Vec<char> = stacks[m.from - 1].drain(new_len..).collect();
+        let mut items = get_items(&mut stacks[m.from - 1], new_len);
         stacks[m.to - 1].append(&mut items);
     });
     let res: String = stacks.iter_mut().map(|s| s.pop().unwrap()).collect();
@@ -52,34 +62,11 @@ fn solve(input: &str) -> Result<String> {
 }
 
 fn solve_1(input: &str) -> Result<String> {
-    let splits: Vec<&str> = input.split("\n\n").collect();
-    let pre_stacks = splits[0];
-    let pre_moves = splits[1];
-    let nr_stacks = (pre_stacks.lines().take(1).collect::<String>().len() + 1) / 4;
-    let moves: Vec<Move> = pre_moves.lines().map(|l| l.parse().unwrap()).collect();
-    let mut stacks: Vec<Vec<char>> = vec![Vec::new(); nr_stacks];
-
-    pre_stacks.lines().rev().skip(1).for_each(|l| {
-        let parts: Vec<&str> = l.as_bytes().chunks(4).map(|l| from_utf8(l).unwrap()).collect();
-        parts.iter().enumerate().for_each(|(i, &p)| {
-            let c: char = p.chars().nth(1).unwrap();
-            if c != ' ' {
-                stacks[i].push(c);
-            }
-        })
-    });
-    moves.iter().for_each(|m| {
-        (0..(m.amount)).for_each(|_| {
-            let item = stacks[m.from - 1].pop().unwrap();
-            stacks[m.to - 1].push(item);
-        });
-    });
-    let res: String = stacks.iter_mut().map(|s| s.pop().unwrap()).collect();
-    Ok(res)
+    solve(input, get_items_part1)
 }
 
 fn solve_2(input: &str) -> Result<String> {
-    solve(input)
+    solve(input, get_items_part2)
 }
 
 fn input() -> String {
