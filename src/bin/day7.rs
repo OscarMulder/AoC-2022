@@ -1,4 +1,5 @@
-use std::path::Path;
+use std::collections::HashMap;
+use std::{path::Path, collections::BTreeMap};
 use anyhow::Result;
 use nom::bytes::complete::tag;
 use nom::IResult;
@@ -6,137 +7,102 @@ use nom::*;
 
 const DAY: u32 = 7;
 
-struct Dir {
-    name: String,
-    files: Vec<Box<File>>,
-    children: Vec<Box<Dir>>,
-}
-
-impl Dir  {
-    fn new(name: String) -> Self {
-        Dir {
-            name,
-            files: vec![],
-            children: vec![],
-        }
-    }
-}
-
-struct File {
-    name: String,
-    size: u32,
-}
-
 enum Cmd {
     CdOut,
     CdRoot,
     Cd(String),
     Ls,
+    File(String, u32),
+    Dir(String),
 }
 
 fn parse_ls(input: &str) -> IResult<&str, Cmd> {
-    let (input, _) = tag("ls")(input)?;
+    let (input, _) = tag("$ ls")(input)?;
     Ok((input, Cmd::Ls))
 }
 
-fn parse_cmd(input: &str) -> IResult<&str, Cmd> {
-    let (input, (_, cmd)) = sequence::tuple((tag("$ "), branch::alt((parse_cd, parse_ls))))(input)?;
+fn parse_line(input: &str) -> IResult<&str, Cmd> {
+    let (input, cmd) = branch::alt((parse_ls_file, parse_ls_dir, parse_cd, parse_ls))(input)?;
     Ok((input, cmd))
 }
 
+fn parse_ls_file(input: &str) -> IResult<&str, Cmd> {
+    let (input, (size, _, name)) = sequence::tuple((character::complete::u32, character::complete::space1, multi::many1(character::complete::anychar)))(input)?;
+    Ok((input, Cmd::File(name.iter().collect(), size)))
+}
+
+fn parse_ls_dir(input: &str) -> IResult<&str, Cmd> {
+    let (input, (_, _, name)) = sequence::tuple((tag("dir"), character::complete::space1, multi::many1(character::complete::anychar)))(input)?;
+    Ok((input, Cmd::Dir(name.iter().collect())))
+}
+
+fn get_path(stack: Vec<String>) -> String {
+    let str: String = stack.into_iter().collect();
+    str
+}
+
 fn parse_cd(input: &str) -> IResult<&str, Cmd> {
-    let dir_out = tag("..");
-    let dir_root = tag("/");
-    let (input, dir) = tag("cd ")(input)?;
+    let dir_out = tag("$ cd ..");
+    let dir_root = tag("$ cd /");
     let (input, dir) = combinator::opt(dir_out)(input)?;
-    if let Some(dir) = dir {
+    if let Some(_) = dir {
         return Ok((input, Cmd::CdOut))
     }
     let (input, dir) = combinator::opt(dir_root)(input)?;
-    if let Some(dir) = dir {
+    if let Some(_) = dir {
         return Ok((input, Cmd::CdRoot))
     }
+    let (input, _) = tag("$ cd ")(input)?;
     let (input, dir) = multi::many1(character::complete::anychar)(input)?;
     Ok((input, Cmd::Cd(dir.iter().collect())))
 }
 
-fn parse_ls_file(input: &str) -> IResult<&str, File> {
-    let (input, (size, _, name)) = sequence::tuple((character::complete::u32, character::complete::space1, multi::many1(character::complete::anychar)))(input)?;
-    Ok((input, File { size, name: name.iter().collect()}))
-}
-
-fn parse_ls_dir(input: &str) -> IResult<&str, Dir> {
-    let (input, (_, _, name)) = sequence::tuple((tag("dir"), character::complete::space1, multi::many1(character::complete::anychar)))(input)?;
-    Ok((input, Dir::new(name.iter().collect())))
-}
-
-fn parse_ls_output_line<'a>(input: &'a str) -> IResult<&'a str, Dir> {
-    let mut current_dir = Dir::new("curr".to_string());
-    let (input, file) = combinator::opt(parse_ls_file)(input)?;
-    if let Some(file) = file {
-        current_dir.files.push(Box::new(file));
-    }
-    let (input, dir) = combinator::opt(parse_ls_dir)(input)?;
-    if let Some(dir) = dir {
-        current_dir.children.push(Box::new(dir));
-    }
-    Ok((input, current_dir))
-}
-
-fn parse_ls_output<'a,'b>(input: &'a str) -> IResult<&'a str, Dir> {
-    let (input, (dirs, _)) = multi::many_till(parse_ls_output_line, parse_cmd)(input)?;
-    let mut current_dir = Dir::new("curr".to_string());
-    combine_dirs(&mut current_dir, dirs);
-    return Ok((input, current_dir));
-}
-
-fn combine_dirs(current_dir: &mut Dir, dirs: Vec<Dir>) -> () {
-    for mut dir in dirs {
-        current_dir.files.append(&mut dir.files);
-        current_dir.children.append(&mut dir.children);
+fn parse(input: &str) -> HashMap<String, u32> {
+    let mut filesystem: BTreeMap<String, u32> = BTreeMap::new();
+    let mut dirs: Vec<String> = vec![];
+    let mut stack: Vec<String> = vec![];
+    stack.push("/".to_string());
+    dirs.push("/".to_string());
+    let mut lines = input.lines();
+    while let Some(line) = lines.next() {
+        let (_, cmd) = parse_line(line).unwrap();
+        match cmd {
+            Cmd::CdOut => { stack.pop(); },
+            Cmd::CdRoot => { stack.drain(1..); },
+            Cmd::Cd(name) => { stack.push(format!("{}/", name)); },
+            Cmd::Ls => {},
+            Cmd::File(name, size) => {
+                let pwd = get_path(stack.clone());
+                filesystem.insert(format!("{}{}", pwd, name), size);
+            },
+            Cmd::Dir(name) => {
+                let pwd = get_path(stack.clone());
+                dirs.push(format!("{}{}/", pwd, name));
+            },
+        };
     };
-}
-
-fn parse(input: &str) -> IResult<&str, Dir> {
-    let root_dir = Dir { name: "/".to_string(), files: vec![], children: vec![]};
-    let mut stack: Vec<Dir> = vec![];
-    stack.push(root_dir);
-    let (input, cmd) = parse_cmd(input)?;
-    let input = match cmd {
-        Cmd::CdOut => { stack.pop(); input },
-        Cmd::CdRoot => { 
-            stack.drain(1..);
-            input
-        },
-        Cmd::Cd(name) => {
-            let current = stack.pop().unwrap();
-            // let new = current.children.iter().find(|c| c.name == name).unwrap();
-            // let new = stack.iter().reduce(|current, dir| {
-            //     current.children.iter().find(|c| c.name == dir.name).unwrap()
-            // });
-            stack.push(current);
-            // stack.push(new);
-            input
-        },
-        Cmd::Ls => {
-            let mut current = stack.pop().unwrap();
-            let (input, dir) = parse_ls_output(input)?;
-            combine_dirs(&mut current, vec![dir]);
-            stack.push(current);
-            input
-        },
-    };
-    stack.drain(1..);
-    let root_dir = stack.pop().unwrap();
-    Ok((input, root_dir))
+    let mut dir_sizes: HashMap<String, u32> = HashMap::new();
+    dirs.iter().for_each(|dir| {
+        for (_,v) in filesystem.range(dir.to_string()..).take_while(|(k, _)| k.starts_with(dir)) {
+            *dir_sizes.entry(dir.to_string()).or_insert(0) += v;
+        }
+    });
+    dir_sizes
 }
 
 fn solve(input: &str) -> Result<String> {
-    Ok("".to_string())
+    let mut dir_sizes = parse(input);
+    let sorted: BTreeMap<u32, String> = dir_sizes.iter().map(|(k,&v)| (v,k.clone())).collect();
+    let unused_space = 70_000_000 - *dir_sizes.entry("/".to_string()).or_default();
+    let to_find = 30_000_000 - unused_space;
+    let (res, _) = sorted.iter().find(|(k, _)| **k >= to_find).unwrap();
+    Ok(res.to_string())
 }
 
 fn solve_1(input: &str) -> Result<String> {
-    solve(input)
+    let dir_sizes = parse(input);
+    let res: u64 = dir_sizes.iter().filter(|(_, &size)| size <= 100_000).map(|(_, size)| *size as u64).sum();
+    Ok(res.to_string())
 }
 
 fn solve_2(input: &str) -> Result<String> {
@@ -192,11 +158,10 @@ mod test {
     fn example_second() {
         let input = example_input();
 
-        let result = "-";
+        let result = "24933642";
         let solve = solve_2(&input);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
     }
-
 }
