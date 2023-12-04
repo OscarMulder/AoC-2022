@@ -1,18 +1,15 @@
 use std::path::Path;
 use anyhow::Result;
 
-const DAY: u32 = 10;
+const DAY: u32 = 1;
 
-fn solve(input: &str) -> Result<String> {
-    Ok("".to_string())
-}
-
-fn solve_1(input: &str) -> Result<String> {
-    solve(input)
-}
-
-fn solve_2(input: &str) -> Result<String> {
-    solve(input)
+fn solve(input: &str, take: usize) -> Result<u32> {
+    let mut res: Vec<u32> = input
+        .split("\n\n")
+        .map(|s| s.lines().map(str::parse::<u32>).sum())
+        .collect::<Result<Vec<u32>, std::num::ParseIntError>>()?;
+    res.sort_by(|a,b| b.cmp(a));
+    Ok(res.iter().take(take).sum::<u32>())
 }
 
 fn input() -> String {
@@ -25,13 +22,13 @@ fn input() -> String {
 fn main() {
     let input = input();
 
-    let solve_first = solve_1(&input);
+    let solve_first = solve(&input, 1);
     match solve_first {
         Ok(res) => println!("Day {}, first puzzle: {}", DAY, res),
         Err(e) => println!("{:?}", e),
     }
 
-    let solve_second = solve_2(&input);
+    let solve_second = solve(&input, 3);
     match solve_second {
         Ok(res) => println!("Day {}, second puzzle: {}", DAY, res),
         Err(e) => println!("{:?}", e),
@@ -53,47 +50,21 @@ mod test {
     fn example_first() {
         let input = example_input();
 
-        let result = "13140";
-        let solve = solve_1(&input);
+        let result = 24000;
+        let solve = solve(&input, 1);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
-    }
-
-    #[test]
-    fn multi_example_first() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
-        for (input, result) in inputs {
-            assert_eq!(solve_1(input).unwrap(), result);
-        }
     }
 
     #[test]
     fn example_second() {
         let input = example_input();
 
-        let result = "-";
-        let solve = solve_2(&input);
+        let result = 45000;
+        let solve = solve(&input, 3);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
-    }
-
-    #[test]
-    fn multi_example_second() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
-        for (input, result) in inputs {
-            assert_eq!(solve_2(input).unwrap(), result);
-        }
     }
 }

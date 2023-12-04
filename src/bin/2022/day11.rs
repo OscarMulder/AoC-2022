@@ -1,7 +1,43 @@
-use std::path::Path;
 use anyhow::Result;
+use nom::*;
+use std::path::Path;
 
 const DAY: u32 = 11;
+
+struct Monkey {
+    nr: i32,
+    starting_items: Vec<i32>,
+    operation: String,
+    div_test: i32,
+    true_throw: i32,
+    false_throw: i32,
+}
+
+impl Monkey {
+    fn new(
+        nr: i32,
+        starting_items: Vec<i32>,
+        operation: String,
+        div_test: i32,
+        true_throw: i32,
+        false_throw: i32,
+    ) -> Self {
+        Monkey {
+            nr,
+            starting_items,
+            operation,
+            div_test,
+            true_throw,
+            false_throw,
+        }
+    }
+}
+
+fn parse_monkey_nr(input: &str) ->
+
+fn parse(input: &str) -> Vec<Monkey> {
+    let mut monkeys = input
+}
 
 fn solve(input: &str) -> Result<String> {
     Ok("".to_string())
@@ -73,12 +109,7 @@ mod test {
 
     #[test]
     fn multi_example_second() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
+        let inputs = [("", "-"), ("", "-"), ("", "-"), ("", "-")];
         for (input, result) in inputs {
             assert_eq!(solve_2(input).unwrap(), result);
         }

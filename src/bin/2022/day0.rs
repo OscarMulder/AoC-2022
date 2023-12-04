@@ -1,7 +1,8 @@
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 
-const DAY: u32 = 9;
+const DAY: u32 = 0;
+const YEAR: u32 = 2022;
 
 fn solve(input: &str) -> Result<String> {
     Ok("".to_string())
@@ -16,7 +17,7 @@ fn solve_2(input: &str) -> Result<String> {
 }
 
 fn input() -> String {
-    let path = format!("./data/{}.input", DAY);
+    let path = format!("./data/{}/{}.input", YEAR, DAY);
     let input_path = Path::new(&path);
     let input = std::fs::read_to_string(input_path).unwrap();
     input
@@ -43,7 +44,7 @@ mod test {
     use super::*;
 
     fn example_input() -> String {
-        let path = format!("./data/{}.example", DAY);
+        let path = format!("./data/{}/{}.example", YEAR, DAY);
         let input_path = Path::new(&path);
         let input = std::fs::read_to_string(input_path).unwrap();
         input
@@ -53,11 +54,19 @@ mod test {
     fn example_first() {
         let input = example_input();
 
-        let result = "13";
+        let result = "-";
         let solve = solve_1(&input);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
+    }
+
+    #[test]
+    fn multi_example_first() {
+        let inputs = [("", "-"), ("", "-"), ("", "-"), ("", "-")];
+        for (input, result) in inputs {
+            assert_eq!(solve_1(input).unwrap(), result);
+        }
     }
 
     #[test]
@@ -73,12 +82,7 @@ mod test {
 
     #[test]
     fn multi_example_second() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
+        let inputs = [("", "-"), ("", "-"), ("", "-"), ("", "-")];
         for (input, result) in inputs {
             assert_eq!(solve_2(input).unwrap(), result);
         }

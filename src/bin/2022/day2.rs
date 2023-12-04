@@ -1,18 +1,51 @@
 use std::path::Path;
 use anyhow::Result;
 
-const DAY: u32 = 0;
+const DAY: u32 = 2;
 
-fn solve(input: &str) -> Result<String> {
-    Ok("".to_string())
+fn scores_1(round: &str) -> u32 {
+    match round {
+        "A X" => 4,
+        "A Y" => 8,
+        "A Z" => 3,
+        "B X" => 1,
+        "B Y" => 5,
+        "B Z" => 9,
+        "C X" => 7,
+        "C Y" => 2,
+        "C Z" => 6,
+        _ => 0
+    }
+}
+
+fn scores_2(round: &str) -> u32 {
+    match round {
+        "A X" => 3,
+        "A Y" => 4,
+        "A Z" => 8,
+        "B X" => 1,
+        "B Y" => 5,
+        "B Z" => 9,
+        "C X" => 2,
+        "C Y" => 6,
+        "C Z" => 7,
+        _ => 0
+    }
+}
+
+fn solve(input: &str, scores: fn(&str) -> u32) -> Result<String> {
+    let res: u32 = input.lines()
+        .map(scores)
+        .sum();
+    Ok(res.to_string())
 }
 
 fn solve_1(input: &str) -> Result<String> {
-    solve(input)
+    solve(input, scores_1)
 }
 
 fn solve_2(input: &str) -> Result<String> {
-    solve(input)
+    solve(input, scores_2)
 }
 
 fn input() -> String {
@@ -53,7 +86,7 @@ mod test {
     fn example_first() {
         let input = example_input();
 
-        let result = "-";
+        let result = "15";
         let solve = solve_1(&input);
 
         assert!(solve.is_ok());
@@ -61,39 +94,13 @@ mod test {
     }
 
     #[test]
-    fn multi_example_first() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
-        for (input, result) in inputs {
-            assert_eq!(solve_1(input).unwrap(), result);
-        }
-    }
-
-    #[test]
     fn example_second() {
         let input = example_input();
 
-        let result = "-";
+        let result = "12";
         let solve = solve_2(&input);
 
         assert!(solve.is_ok());
         assert_eq!(solve.unwrap(), result);
-    }
-
-    #[test]
-    fn multi_example_second() {
-        let inputs = [
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-            ("", "-"),
-        ];
-        for (input, result) in inputs {
-            assert_eq!(solve_2(input).unwrap(), result);
-        }
     }
 }
